@@ -1,0 +1,50 @@
+import numpy as np
+from scipy.linalg import eigvals
+
+# Parâmetros do sistema half-car
+m_body = 1000  # Massa da carroceria (kg)
+m_wheel_front = 100  # Massa da roda dianteira (kg)
+m_wheel_rear = 100  # Massa da roda traseira (kg)
+k_spring_front = 20000  # Constante da mola dianteira (N/m)
+k_spring_rear = 20000  # Constante da mola traseira (N/m)
+k_tire_front = 150000  # Constante da mola do pneu dianteiro (N/m)
+k_tire_rear = 150000  # Constante da mola do pneu traseiro (N/m)
+b_damper_front = 1500  # Coeficiente de amortecimento dianteiro (Ns/m)
+b_damper_rear = 1500  # Coeficiente de amortecimento traseiro (Ns/m)
+L_front = 1.2  # Distância do CG à roda dianteira (m)
+L_rear = 1.6  # Distância do CG à roda traseira (m)
+I_body = 3000  # Momento de inércia da carroceria (kg*m^2)
+
+# Matrizes de estado do sistema half-car
+A = np.array([
+    [0, 1, 0, 0, 0, 0],
+    [-(k_spring_front + k_spring_rear) / m_body, -(b_damper_front + b_damper_rear) / m_body, k_spring_front / m_body, b_damper_front / m_body, k_spring_rear / m_body, b_damper_rear / m_body],
+    [0, 0, 0, 1, 0, 0],
+    [k_spring_front / m_wheel_front, b_damper_front / m_wheel_front, -(k_spring_front + k_tire_front) / m_wheel_front, -b_damper_front / m_wheel_front, 0, 0],
+    [0, 0, 0, 0, 0, 1],
+    [k_spring_rear / m_wheel_rear, b_damper_rear / m_wheel_rear, 0, 0, -(k_spring_rear + k_tire_rear) / m_wheel_rear, -b_damper_rear / m_wheel_rear]
+])
+
+B = np.array([
+    [0, 0],
+    [L_front / I_body, -L_rear / I_body],
+    [0, 0],
+    [-1 / m_wheel_front, 0],
+    [0, 0],
+    [0, -1 / m_wheel_rear]
+])
+
+# Verificar a controlabilidade
+def is_controllable(A, B):
+    # Matriz de controlabilidade
+    Co = np.hstack([B, np.dot(A, B), np.dot(A, np.dot(A, B)), np.dot(A, np.dot(A, np.dot(A, B))), np.dot(A, np.dot(A, np.dot(A, np.dot(A, B)))), np.dot(A, np.dot(A, np.dot(A, np.dot(A, np.dot(A, B)))))])
+
+    # Verificar o posto da matriz de controlabilidade
+    rank = np.linalg.matrix_rank(Co)
+    return rank == A.shape[0]
+
+# Testar controlabilidade
+if is_controllable(A, B):
+    print("O sistema half-car é controlável.")
+else:
+    print("O sistema half-car não é controlável.")
